@@ -270,13 +270,24 @@ private fun DatePickerDialog(
     val datePickerState = rememberDatePickerState(
         initialSelectedDateMillis = System.currentTimeMillis()
     )
+    var selectedHour by remember { mutableStateOf(9) }
+    var selectedMinute by remember { mutableStateOf(0) }
     
     AlertDialog(
         onDismissRequest = onDismiss,
         confirmButton = {
             TextButton(
                 onClick = {
-                    onDateSelected(datePickerState.selectedDateMillis)
+                    datePickerState.selectedDateMillis?.let { dateMillis ->
+                        val calendar = Calendar.getInstance().apply {
+                            timeInMillis = dateMillis
+                            set(Calendar.HOUR_OF_DAY, selectedHour)
+                            set(Calendar.MINUTE, selectedMinute)
+                            set(Calendar.SECOND, 0)
+                            set(Calendar.MILLISECOND, 0)
+                        }
+                        onDateSelected(calendar.timeInMillis)
+                    }
                 }
             ) {
                 Text("确定")
@@ -288,7 +299,62 @@ private fun DatePickerDialog(
             }
         },
         text = {
-            DatePicker(state = datePickerState)
+            Column {
+                DatePicker(state = datePickerState)
+                
+                Divider(modifier = Modifier.padding(vertical = 8.dp))
+                
+                // 时间选择器
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = "小时",
+                            style = MaterialTheme.typography.labelMedium
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        OutlinedTextField(
+                            value = selectedHour.toString(),
+                            onValueChange = { value ->
+                                value.toIntOrNull()?.let { hour ->
+                                    if (hour in 0..23) selectedHour = hour
+                                }
+                            },
+                            modifier = Modifier.width(80.dp),
+                            singleLine = true
+                        )
+                    }
+                    
+                    Text(
+                        text = ":",
+                        style = MaterialTheme.typography.headlineMedium,
+                        modifier = Modifier.padding(horizontal = 8.dp)
+                    )
+                    
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = "分钟",
+                            style = MaterialTheme.typography.labelMedium
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        OutlinedTextField(
+                            value = selectedMinute.toString().padStart(2, '0'),
+                            onValueChange = { value ->
+                                value.toIntOrNull()?.let { minute ->
+                                    if (minute in 0..59) selectedMinute = minute
+                                }
+                            },
+                            modifier = Modifier.width(80.dp),
+                            singleLine = true
+                        )
+                    }
+                }
+            }
         }
     )
 }

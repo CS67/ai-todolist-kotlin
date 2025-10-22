@@ -208,20 +208,7 @@ fun TodoItem(
                         }
                     }
                     
-                    // 显示时间信息
-                    val dateFormat = SimpleDateFormat("MM月dd日 HH:mm", Locale.getDefault())
-                    val timeText = if (todo.isCompleted && todo.completedAt != null) {
-                        "完成于 ${dateFormat.format(Date(todo.completedAt))}"
-                    } else {
-                        "创建于 ${dateFormat.format(Date(todo.createdAt))}"
-                    }
-                    
-                    Text(
-                        text = timeText,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
-                        modifier = Modifier.padding(top = 4.dp)
-                    )
+
                 }
                 
                 // 操作按钮
