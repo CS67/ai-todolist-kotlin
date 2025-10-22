@@ -15,6 +15,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.ViewModelProvider
 import com.example.todolist.data.Todo
 import com.example.todolist.ui.components.AddTodoDialog
 import com.example.todolist.ui.components.CollapsibleSectionHeader
@@ -29,8 +30,14 @@ import com.example.todolist.viewmodel.TodoViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TodoListScreen(
-    viewModel: TodoViewModel = viewModel()
+    viewModelFactory: ViewModelProvider.Factory,
+    viewModel: TodoViewModel = viewModel(factory = viewModelFactory)
 ) {
+    // 初始化示例数据
+    LaunchedEffect(Unit) {
+        viewModel.initializeSampleData()
+    }
+    
     val todos by viewModel.todos.collectAsState()
     val showAddDialog by viewModel.showAddDialog.collectAsState()
     val editingTodo by viewModel.editingTodo.collectAsState()

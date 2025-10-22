@@ -1,58 +1,27 @@
 package com.example.todolist.viewmodel
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.example.todolist.data.Priority
 import com.example.todolist.data.SubTask
 import com.example.todolist.data.Todo
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import com.example.todolist.repository.TodoRepository
+import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.launch
 import java.util.*
 
 /**
  * Todo列表的ViewModel
  */
-class TodoViewModel : ViewModel() {
+class TodoViewModel(private val repository: TodoRepository) : ViewModel() {
     
-    private val _todos = MutableStateFlow<List<Todo>>(
-        // 添加一些示例数据
-        listOf(
-            Todo(
-                title = "完成工作报告", 
-                description = "整理本月的工作总结和下月计划",
-                priority = Priority.HIGH,
-                dueDate = System.currentTimeMillis() + 2 * 24 * 60 * 60 * 1000, // 2天后
-                subTasks = listOf(
-                    SubTask(title = "收集数据"),
-                    SubTask(title = "分析结果", isCompleted = true),
-                    SubTask(title = "编写报告")
-                )
-            ),
-            Todo(
-                title = "买菜", 
-                description = "购买明天的午餐食材", 
-                isCompleted = true,
-                priority = Priority.LOW
-            ),
-            Todo(
-                title = "锻炼身体", 
-                description = "跑步30分钟",
-                priority = Priority.MEDIUM,
-                dueDate = System.currentTimeMillis() + 12 * 60 * 60 * 1000 // 12小时后
-            ),
-            Todo(
-                title = "阅读技术书籍", 
-                description = "《Jetpack Compose实战》第3章", 
-                isCompleted = true,
-                priority = Priority.LOW,
-                subTasks = listOf(
-                    SubTask(title = "阅读第一节", isCompleted = true),
-                    SubTask(title = "实践例子", isCompleted = true)
-                )
-            )
+    // 从数据库获取todos
+    val todos: StateFlow<List<Todo>> = repository.getAllTodos()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
         )
-    )
-    val todos: StateFlow<List<Todo>> = _todos.asStateFlow()
     
     private val _showAddDialog = MutableStateFlow(false)
     val showAddDialog: StateFlow<Boolean> = _showAddDialog.asStateFlow()
@@ -88,21 +57,23 @@ class TodoViewModel : ViewModel() {
             subTasks = subTasks
         )
         
-        _todos.value = _todos.value + newTodo
+        viewModelScope.launch {
+            repository.insertTodo(newTodo)
+        }
     }
     
     /**
      * 切换Todo完成状态
      */
     fun toggleTodoCompletion(todoId: String) {
-        _todos.value = _todos.value.map { todo ->
-            if (todo.id == todoId) {
-                todo.copy(
+        viewModelScope.launch {
+            val todo = repository.getTodoById(todoId)
+            if (todo != null) {
+                val updatedTodo = todo.copy(
                     isCompleted = !todo.isCompleted,
                     completedAt = if (!todo.isCompleted) System.currentTimeMillis() else null
                 )
-            } else {
-                todo
+                repository.updateTodo(updatedTodo)
             }
         }
     }
@@ -111,7 +82,9 @@ class TodoViewModel : ViewModel() {
      * 删除Todo
      */
     fun deleteTodo(todoId: String) {
-        _todos.value = _todos.value.filter { it.id != todoId }
+        viewModelScope.launch {
+            repository.deleteTodoById(todoId)
+        }
     }
     
     /**
@@ -132,14 +105,16 @@ class TodoViewModel : ViewModel() {
      * 获取未完成的Todo数量
      */
     fun getIncompleteCount(): Int {
-        return _todos.value.count { !it.isCompleted }
+        return todos.value.count { !it.isCompleted }
     }
     
     /**
      * 清除所有已完成的Todo
      */
     fun clearCompletedTodos() {
-        _todos.value = _todos.value.filter { !it.isCompleted }
+        viewModelScope.launch {
+            repository.deleteCompletedTodos()
+        }
     }
     
     /**
@@ -183,17 +158,17 @@ class TodoViewModel : ViewModel() {
     ) {
         if (title.isBlank()) return
         
-        _todos.value = _todos.value.map { todo ->
-            if (todo.id == todoId) {
-                todo.copy(
+        viewModelScope.launch {
+            val todo = repository.getTodoById(todoId)
+            if (todo != null) {
+                val updatedTodo = todo.copy(
                     title = title.trim(),
                     description = description.trim(),
                     priority = priority,
                     dueDate = dueDate,
                     subTasks = subTasks
                 )
-            } else {
-                todo
+                repository.updateTodo(updatedTodo)
             }
         }
         _editingTodo.value = null
@@ -203,19 +178,17 @@ class TodoViewModel : ViewModel() {
      * 切换子任务完成状态
      */
     fun toggleSubTaskCompletion(todoId: String, subTaskId: String) {
-        _todos.value = _todos.value.map { todo ->
-            if (todo.id == todoId) {
-                todo.copy(
-                    subTasks = todo.subTasks.map { subTask ->
-                        if (subTask.id == subTaskId) {
-                            subTask.copy(isCompleted = !subTask.isCompleted)
-                        } else {
-                            subTask
-                        }
+        viewModelScope.launch {
+            val todo = repository.getTodoById(todoId)
+            if (todo != null) {
+                val updatedSubTasks = todo.subTasks.map { subTask ->
+                    if (subTask.id == subTaskId) {
+                        subTask.copy(isCompleted = !subTask.isCompleted)
+                    } else {
+                        subTask
                     }
-                )
-            } else {
-                todo
+                }
+                repository.updateTodo(todo.copy(subTasks = updatedSubTasks))
             }
         }
     }
@@ -226,13 +199,11 @@ class TodoViewModel : ViewModel() {
     fun addSubTask(todoId: String, subTaskTitle: String) {
         if (subTaskTitle.isBlank()) return
         
-        _todos.value = _todos.value.map { todo ->
-            if (todo.id == todoId) {
-                todo.copy(
-                    subTasks = todo.subTasks + SubTask(title = subTaskTitle.trim())
-                )
-            } else {
-                todo
+        viewModelScope.launch {
+            val todo = repository.getTodoById(todoId)
+            if (todo != null) {
+                val newSubTask = SubTask(title = subTaskTitle.trim())
+                repository.updateTodo(todo.copy(subTasks = todo.subTasks + newSubTask))
             }
         }
     }
@@ -241,13 +212,11 @@ class TodoViewModel : ViewModel() {
      * 删除子任务
      */
     fun deleteSubTask(todoId: String, subTaskId: String) {
-        _todos.value = _todos.value.map { todo ->
-            if (todo.id == todoId) {
-                todo.copy(
-                    subTasks = todo.subTasks.filter { it.id != subTaskId }
-                )
-            } else {
-                todo
+        viewModelScope.launch {
+            val todo = repository.getTodoById(todoId)
+            if (todo != null) {
+                val updatedSubTasks = todo.subTasks.filter { it.id != subTaskId }
+                repository.updateTodo(todo.copy(subTasks = updatedSubTasks))
             }
         }
     }
@@ -256,9 +225,61 @@ class TodoViewModel : ViewModel() {
      * 根据优先级排序todos
      */
     fun sortTodosByPriority(): List<Todo> {
-        val incomplete = _todos.value.filter { !it.isCompleted }
-            .sortedWith(compareByDescending<Todo> { it.priority.ordinal }.thenBy { it.dueDate ?: Long.MAX_VALUE })
-        val completed = _todos.value.filter { it.isCompleted }
+        val incomplete = todos.value.filter { !it.isCompleted }
+            .sortedWith(compareByDescending<Todo> { todo -> todo.priority.ordinal }.thenBy { todo -> todo.dueDate ?: Long.MAX_VALUE })
+        val completed = todos.value.filter { it.isCompleted }
         return incomplete + completed
+    }
+    
+    /**
+     * 初始化示例数据（仅在数据库为空时）
+     */
+    fun initializeSampleData() {
+        viewModelScope.launch {
+            val todoCount = repository.getTodoCount()
+            if (todoCount == 0) {
+                val sampleTodos = listOf(
+                    Todo(
+                        title = "完成工作报告", 
+                        description = "整理本月的工作总结和下月计划",
+                        priority = Priority.HIGH,
+                        dueDate = System.currentTimeMillis() + 2 * 24 * 60 * 60 * 1000, // 2天后
+                        subTasks = listOf(
+                            SubTask(title = "收集数据"),
+                            SubTask(title = "分析结果", isCompleted = true),
+                            SubTask(title = "编写报告")
+                        )
+                    ),
+                    Todo(
+                        title = "买菜", 
+                        description = "购买明天的午餐食材", 
+                        isCompleted = true,
+                        priority = Priority.LOW,
+                        completedAt = System.currentTimeMillis() - 60 * 60 * 1000 // 1小时前完成
+                    ),
+                    Todo(
+                        title = "锻炼身体", 
+                        description = "跑步30分钟",
+                        priority = Priority.MEDIUM,
+                        dueDate = System.currentTimeMillis() + 12 * 60 * 60 * 1000 // 12小时后
+                    ),
+                    Todo(
+                        title = "阅读技术书籍", 
+                        description = "《Jetpack Compose实战》第3章", 
+                        isCompleted = true,
+                        priority = Priority.LOW,
+                        completedAt = System.currentTimeMillis() - 2 * 60 * 60 * 1000, // 2小时前完成
+                        subTasks = listOf(
+                            SubTask(title = "阅读第一节", isCompleted = true),
+                            SubTask(title = "实践例子", isCompleted = true)
+                        )
+                    )
+                )
+                
+                sampleTodos.forEach { todo ->
+                    repository.insertTodo(todo)
+                }
+            }
+        }
     }
 }
