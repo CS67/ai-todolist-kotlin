@@ -15,6 +15,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.todolist.data.Todo
 import com.example.todolist.ui.components.AddTodoDialog
 import com.example.todolist.ui.components.CollapsibleSectionHeader
 import com.example.todolist.ui.components.EditTodoDialog
@@ -178,12 +179,19 @@ fun TodoListScreen(
                                     exit = shrinkVertically()
                                 ) {
                                     Column {
-                                        incompleteTodos.forEach { todo ->
+                                        // 按优先级和截止日期排序的未完成任务
+                                        val sortedIncompleteTodos = incompleteTodos.sortedWith(
+                                            compareByDescending<Todo> { todo -> todo.priority.ordinal }
+                                                .thenBy { todo -> todo.dueDate ?: Long.MAX_VALUE }
+                                        )
+                                        sortedIncompleteTodos.forEach { todo ->
                                             TodoItem(
                                                 todo = todo,
                                                 onToggleComplete = viewModel::toggleTodoCompletion,
                                                 onDelete = viewModel::deleteTodo,
-                                                onEdit = viewModel::startEditingTodo
+                                                onEdit = viewModel::startEditingTodo,
+                                                onToggleSubTask = viewModel::toggleSubTaskCompletion,
+                                                onAddSubTask = viewModel::addSubTask
                                             )
                                         }
                                     }
@@ -217,7 +225,9 @@ fun TodoListScreen(
                                                 todo = todo,
                                                 onToggleComplete = viewModel::toggleTodoCompletion,
                                                 onDelete = viewModel::deleteTodo,
-                                                onEdit = viewModel::startEditingTodo
+                                                onEdit = viewModel::startEditingTodo,
+                                                onToggleSubTask = viewModel::toggleSubTaskCompletion,
+                                                onAddSubTask = viewModel::addSubTask
                                             )
                                         }
                                     }
@@ -234,8 +244,8 @@ fun TodoListScreen(
     if (showAddDialog) {
         AddTodoDialog(
             onDismiss = { viewModel.hideAddDialog() },
-            onConfirm = { title, description ->
-                viewModel.addTodo(title, description)
+            onConfirm = { title, description, priority, dueDate, subTasks ->
+                viewModel.addTodo(title, description, priority, dueDate, subTasks)
             }
         )
     }
@@ -245,8 +255,8 @@ fun TodoListScreen(
         EditTodoDialog(
             todo = todo,
             onDismiss = { viewModel.cancelEditingTodo() },
-            onConfirm = { id, title, description ->
-                viewModel.updateTodo(id, title, description)
+            onConfirm = { id, title, description, priority, dueDate, subTasks ->
+                viewModel.updateTodo(id, title, description, priority, dueDate, subTasks)
             }
         )
     }
