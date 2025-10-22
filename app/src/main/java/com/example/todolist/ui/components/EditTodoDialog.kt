@@ -32,7 +32,7 @@ fun EditTodoDialog(
     var selectedPriority by remember { mutableStateOf(todo.priority) }
     var showDatePicker by remember { mutableStateOf(false) }
     var selectedDate by remember { mutableStateOf(todo.dueDate) }
-    var subTasks by remember { mutableStateOf(todo.subTasks.toMutableList()) }
+    var subTasks by remember { mutableStateOf(todo.subTasks) }
     var newSubTaskTitle by remember { mutableStateOf("") }
     
     Dialog(onDismissRequest = onDismiss) {
@@ -158,7 +158,7 @@ fun EditTodoDialog(
                     IconButton(
                         onClick = {
                             if (newSubTaskTitle.isNotBlank()) {
-                                subTasks.add(SubTask(title = newSubTaskTitle.trim()))
+                                subTasks = subTasks + SubTask(title = newSubTaskTitle.trim())
                                 newSubTaskTitle = ""
                             }
                         },
@@ -184,7 +184,9 @@ fun EditTodoDialog(
                                 Checkbox(
                                     checked = subTask.isCompleted,
                                     onCheckedChange = { isChecked ->
-                                        subTasks[index] = subTask.copy(isCompleted = isChecked)
+                                        subTasks = subTasks.mapIndexed { i, task ->
+                                            if (i == index) task.copy(isCompleted = isChecked) else task
+                                        }
                                     },
                                     colors = CheckboxDefaults.colors(
                                         checkedColor = MaterialTheme.colorScheme.secondary
@@ -202,7 +204,7 @@ fun EditTodoDialog(
                                 
                                 IconButton(
                                     onClick = {
-                                        subTasks.removeAt(index)
+                                        subTasks = subTasks.filterIndexed { i, _ -> i != index }
                                     }
                                 ) {
                                     Icon(
