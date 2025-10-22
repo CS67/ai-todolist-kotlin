@@ -240,19 +240,19 @@ class TodoViewModel(private val repository: TodoRepository) : ViewModel() {
             if (todoCount == 0) {
                 val sampleTodos = listOf(
                     Todo(
-                        title = "完成工作报告", 
-                        description = "整理本月的工作总结和下月计划",
+                        title = "App开发",
+                        description = "Todo List 待办清单开发",
                         priority = Priority.HIGH,
                         dueDate = System.currentTimeMillis() + 2 * 24 * 60 * 60 * 1000, // 2天后
                         subTasks = listOf(
-                            SubTask(title = "收集数据"),
-                            SubTask(title = "分析结果", isCompleted = true),
-                            SubTask(title = "编写报告")
+                            SubTask(title = "App开发"),
+                            SubTask(title = "编写报告", isCompleted = true),
+                            SubTask(title = "编写PPT")
                         )
                     ),
                     Todo(
-                        title = "买菜", 
-                        description = "购买明天的午餐食材", 
+                        title = "吃饭",
+                        description = "提前半小时点外卖",
                         isCompleted = true,
                         priority = Priority.LOW,
                         completedAt = System.currentTimeMillis() - 60 * 60 * 1000 // 1小时前完成
@@ -264,7 +264,7 @@ class TodoViewModel(private val repository: TodoRepository) : ViewModel() {
                         dueDate = System.currentTimeMillis() + 12 * 60 * 60 * 1000 // 12小时后
                     ),
                     Todo(
-                        title = "阅读技术书籍", 
+                        title = "阅读书籍",
                         description = "《Jetpack Compose实战》第3章", 
                         isCompleted = true,
                         priority = Priority.LOW,
