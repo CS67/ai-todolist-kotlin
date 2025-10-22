@@ -15,7 +15,7 @@ import com.example.todolist.database.TodoDatabase
 import com.example.todolist.repository.TodoRepository
 import com.example.todolist.ui.screens.TodoListScreen
 import com.example.todolist.ui.theme.TodoListTheme
-import com.example.todolist.viewmodel.TodoViewModelFactory
+import com.example.todolist.viewmodel.TodoViewModel
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -24,7 +24,7 @@ class MainActivity : ComponentActivity() {
             TodoListTheme {
                 val database = TodoDatabase.getDatabase(this)
                 val repository = TodoRepository(database.todoDao())
-                val viewModelFactory = TodoViewModelFactory(repository)
+                val viewModelFactory = TodoViewModel.Factory(repository)
                 
                 TodoListScreen(
                     viewModelFactory = viewModelFactory

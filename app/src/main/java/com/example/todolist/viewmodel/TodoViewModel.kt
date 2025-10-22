@@ -1,6 +1,7 @@
 package com.example.todolist.viewmodel
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.todolist.data.Priority
 import com.example.todolist.data.SubTask
@@ -280,6 +281,22 @@ class TodoViewModel(private val repository: TodoRepository) : ViewModel() {
                     repository.insertTodo(todo)
                 }
             }
+        }
+    }
+
+    /**
+     * TodoViewModel工厂类 - 合并到同一文件中
+     */
+    class Factory(
+        private val repository: TodoRepository
+    ) : ViewModelProvider.Factory {
+        
+        @Suppress("UNCHECKED_CAST")
+        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+            if (modelClass.isAssignableFrom(TodoViewModel::class.java)) {
+                return TodoViewModel(repository) as T
+            }
+            throw IllegalArgumentException("Unknown ViewModel class")
         }
     }
 }

@@ -268,18 +268,32 @@ private fun DatePickerDialog(
     onDateSelected: (Long?) -> Unit,
     onDismiss: () -> Unit
 ) {
-    val datePickerState = rememberDatePickerState()
+    val datePickerState = rememberDatePickerState(
+        initialSelectedDateMillis = System.currentTimeMillis()
+    )
     var selectedHour by remember { mutableStateOf(9) }
     var selectedMinute by remember { mutableStateOf(0) }
+    var hourText by remember { mutableStateOf("9") }
+    var minuteText by remember { mutableStateOf("00") }
     
     AlertDialog(
         onDismissRequest = onDismiss,
         confirmButton = {
             TextButton(
                 onClick = {
-                    datePickerState.selectedDateMillis?.let { dateMillis ->
+                    val selectedDateMillis = datePickerState.selectedDateMillis
+                    if (selectedDateMillis != null) {
                         val calendar = Calendar.getInstance().apply {
-                            timeInMillis = dateMillis
+                            timeInMillis = selectedDateMillis
+                            set(Calendar.HOUR_OF_DAY, selectedHour)
+                            set(Calendar.MINUTE, selectedMinute)
+                            set(Calendar.SECOND, 0)
+                            set(Calendar.MILLISECOND, 0)
+                        }
+                        onDateSelected(calendar.timeInMillis)
+                    } else {
+                        // 如果没有选择日期，使用当前日期
+                        val calendar = Calendar.getInstance().apply {
                             set(Calendar.HOUR_OF_DAY, selectedHour)
                             set(Calendar.MINUTE, selectedMinute)
                             set(Calendar.SECOND, 0)
@@ -318,10 +332,13 @@ private fun DatePickerDialog(
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         OutlinedTextField(
-                            value = selectedHour.toString(),
+                            value = hourText,
                             onValueChange = { value ->
+                                hourText = value
                                 value.toIntOrNull()?.let { hour ->
                                     if (hour in 0..23) selectedHour = hour
+                                } ?: run {
+                                    if (value.isEmpty()) selectedHour = 0
                                 }
                             },
                             modifier = Modifier.width(80.dp),
@@ -342,10 +359,13 @@ private fun DatePickerDialog(
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         OutlinedTextField(
-                            value = selectedMinute.toString().padStart(2, '0'),
+                            value = minuteText,
                             onValueChange = { value ->
+                                minuteText = value
                                 value.toIntOrNull()?.let { minute ->
                                     if (minute in 0..59) selectedMinute = minute
+                                } ?: run {
+                                    if (value.isEmpty()) selectedMinute = 0
                                 }
                             },
                             modifier = Modifier.width(80.dp),
