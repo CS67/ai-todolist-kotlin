@@ -246,8 +246,8 @@ class TodoViewModel(private val repository: TodoRepository) : ViewModel() {
                         priority = Priority.HIGH,
                         dueDate = System.currentTimeMillis() + 2 * 24 * 60 * 60 * 1000, // 2天后
                         subTasks = listOf(
-                            SubTask(title = "App开发"),
-                            SubTask(title = "编写报告", isCompleted = true),
+                            SubTask(title = "App开发", isCompleted = true),
+                            SubTask(title = "编写报告"),
                             SubTask(title = "编写PPT")
                         )
                     ),
