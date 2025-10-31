@@ -1,5 +1,7 @@
 package com.example.todolist.ui.components
 
+import android.app.DatePickerDialog
+import android.app.TimePickerDialog
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -9,6 +11,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.example.todolist.data.Priority
@@ -30,10 +33,11 @@ fun EditTodoDialog(
     var title by remember { mutableStateOf(todo.title) }
     var description by remember { mutableStateOf(todo.description) }
     var selectedPriority by remember { mutableStateOf(todo.priority) }
-    var showDatePicker by remember { mutableStateOf(false) }
     var selectedDate by remember { mutableStateOf(todo.dueDate) }
     var subTasks by remember { mutableStateOf(todo.subTasks) }
     var newSubTaskTitle by remember { mutableStateOf("") }
+    
+    val context = LocalContext.current
     
     Dialog(onDismissRequest = onDismiss) {
         Card(
@@ -107,7 +111,49 @@ fun EditTodoDialog(
                     )
                     
                     TextButton(
-                        onClick = { showDatePicker = true }
+                        onClick = {
+                            // 使用系统日期选择器
+                            val calendar = Calendar.getInstance()
+                            selectedDate?.let { calendar.timeInMillis = it }
+                            
+                            DatePickerDialog(
+                                context,
+                                { _, year, month, dayOfMonth ->
+                                    val selectedCalendar = Calendar.getInstance().apply {
+                                        set(year, month, dayOfMonth)
+                                        // 保持之前设置的时间，如果没有则默认为9:00
+                                        if (selectedDate == null) {
+                                            set(Calendar.HOUR_OF_DAY, 9)
+                                            set(Calendar.MINUTE, 0)
+                                        } else {
+                                            val prevCalendar = Calendar.getInstance().apply { 
+                                                timeInMillis = selectedDate!! 
+                                            }
+                                            set(Calendar.HOUR_OF_DAY, prevCalendar.get(Calendar.HOUR_OF_DAY))
+                                            set(Calendar.MINUTE, prevCalendar.get(Calendar.MINUTE))
+                                        }
+                                        set(Calendar.SECOND, 0)
+                                        set(Calendar.MILLISECOND, 0)
+                                    }
+                                    
+                                    // 选择完日期后，弹出时间选择器
+                                    TimePickerDialog(
+                                        context,
+                                        { _, hourOfDay, minute ->
+                                            selectedCalendar.set(Calendar.HOUR_OF_DAY, hourOfDay)
+                                            selectedCalendar.set(Calendar.MINUTE, minute)
+                                            selectedDate = selectedCalendar.timeInMillis
+                                        },
+                                        selectedCalendar.get(Calendar.HOUR_OF_DAY),
+                                        selectedCalendar.get(Calendar.MINUTE),
+                                        true
+                                    ).show()
+                                },
+                                calendar.get(Calendar.YEAR),
+                                calendar.get(Calendar.MONTH),
+                                calendar.get(Calendar.DAY_OF_MONTH)
+                            ).show()
+                        }
                     ) {
                         Icon(
                             imageVector = Icons.Default.DateRange,
@@ -246,140 +292,4 @@ fun EditTodoDialog(
             }
         }
     }
-    
-    // 日期选择器
-    if (showDatePicker) {
-        DatePickerDialog(
-            onDateSelected = { date ->
-                selectedDate = date
-                showDatePicker = false
-            },
-            onDismiss = {
-                showDatePicker = false
-            },
-            initialDate = selectedDate
-        )
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun DatePickerDialog(
-    onDateSelected: (Long?) -> Unit,
-    onDismiss: () -> Unit,
-    initialDate: Long? = null
-) {
-    val datePickerState = rememberDatePickerState(
-        initialSelectedDateMillis = initialDate ?: System.currentTimeMillis()
-    )
-    
-    // 从初始日期获取时间，如果没有则默认为9:00
-    val initialCalendar = Calendar.getInstance().apply {
-        timeInMillis = initialDate ?: System.currentTimeMillis()
-    }
-    var selectedHour by remember { mutableStateOf(initialCalendar.get(Calendar.HOUR_OF_DAY)) }
-    var selectedMinute by remember { mutableStateOf(initialCalendar.get(Calendar.MINUTE)) }
-    var hourText by remember { mutableStateOf(initialCalendar.get(Calendar.HOUR_OF_DAY).toString()) }
-    var minuteText by remember { mutableStateOf(initialCalendar.get(Calendar.MINUTE).toString().padStart(2, '0')) }
-    
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        confirmButton = {
-            TextButton(
-                onClick = {
-                    val selectedDateMillis = datePickerState.selectedDateMillis
-                    if (selectedDateMillis != null) {
-                        val calendar = Calendar.getInstance().apply {
-                            timeInMillis = selectedDateMillis
-                            set(Calendar.HOUR_OF_DAY, selectedHour)
-                            set(Calendar.MINUTE, selectedMinute)
-                            set(Calendar.SECOND, 0)
-                            set(Calendar.MILLISECOND, 0)
-                        }
-                        onDateSelected(calendar.timeInMillis)
-                    } else {
-                        // 如果没有选择日期，使用当前日期
-                        val calendar = Calendar.getInstance().apply {
-                            set(Calendar.HOUR_OF_DAY, selectedHour)
-                            set(Calendar.MINUTE, selectedMinute)
-                            set(Calendar.SECOND, 0)
-                            set(Calendar.MILLISECOND, 0)
-                        }
-                        onDateSelected(calendar.timeInMillis)
-                    }
-                }
-            ) {
-                Text("确定")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("取消")
-            }
-        },
-        text = {
-            Column {
-                DatePicker(state = datePickerState)
-                
-                Divider(modifier = Modifier.padding(vertical = 8.dp))
-                
-                // 时间选择器
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    horizontalArrangement = Arrangement.SpaceEvenly,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(
-                            text = "小时",
-                            style = MaterialTheme.typography.labelMedium
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        OutlinedTextField(
-                            value = hourText,
-                            onValueChange = { value ->
-                                hourText = value
-                                value.toIntOrNull()?.let { hour ->
-                                    if (hour in 0..23) selectedHour = hour
-                                } ?: run {
-                                    if (value.isEmpty()) selectedHour = 0
-                                }
-                            },
-                            modifier = Modifier.width(80.dp),
-                            singleLine = true
-                        )
-                    }
-                    
-                    Text(
-                        text = ":",
-                        style = MaterialTheme.typography.headlineMedium,
-                        modifier = Modifier.padding(horizontal = 8.dp)
-                    )
-                    
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(
-                            text = "分钟",
-                            style = MaterialTheme.typography.labelMedium
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        OutlinedTextField(
-                            value = minuteText,
-                            onValueChange = { value ->
-                                minuteText = value
-                                value.toIntOrNull()?.let { minute ->
-                                    if (minute in 0..59) selectedMinute = minute
-                                } ?: run {
-                                    if (value.isEmpty()) selectedMinute = 0
-                                }
-                            },
-                            modifier = Modifier.width(80.dp),
-                            singleLine = true
-                        )
-                    }
-                }
-            }
-        }
-    )
 }
