@@ -241,8 +241,8 @@ class TodoViewModel(private val repository: TodoRepository) : ViewModel() {
             if (todoCount == 0) {
                 val sampleTodos = listOf(
                     Todo(
-                        title = "App开发",
-                        description = "Todo List 待办清单开发",
+                        title = "安卓app开发",
+                        description = "Todo List",
                         priority = Priority.HIGH,
                         dueDate = System.currentTimeMillis() + 2 * 24 * 60 * 60 * 1000, // 2天后
                         subTasks = listOf(
@@ -252,27 +252,27 @@ class TodoViewModel(private val repository: TodoRepository) : ViewModel() {
                         )
                     ),
                     Todo(
-                        title = "吃饭",
-                        description = "提前半小时点外卖",
+                        title = "点外卖",
+                        description = "提前30min",
                         isCompleted = true,
                         priority = Priority.LOW,
                         completedAt = System.currentTimeMillis() - 60 * 60 * 1000 // 1小时前完成
                     ),
                     Todo(
-                        title = "锻炼身体", 
-                        description = "跑步30分钟",
+                        title = "锻炼身体",
+                        description = "散步30分钟",
                         priority = Priority.MEDIUM,
                         dueDate = System.currentTimeMillis() + 12 * 60 * 60 * 1000 // 12小时后
                     ),
                     Todo(
-                        title = "阅读书籍",
-                        description = "《Jetpack Compose实战》第3章", 
+                        title = "阅读小说",
+                        description = "《三体》",
                         isCompleted = true,
                         priority = Priority.LOW,
                         completedAt = System.currentTimeMillis() - 2 * 60 * 60 * 1000, // 2小时前完成
                         subTasks = listOf(
-                            SubTask(title = "阅读第一节", isCompleted = true),
-                            SubTask(title = "实践例子", isCompleted = true)
+                            SubTask(title = "第一部", isCompleted = true),
+                            SubTask(title = "第二部", isCompleted = true)
                         )
                     )
                 )

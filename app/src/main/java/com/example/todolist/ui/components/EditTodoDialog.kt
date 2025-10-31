@@ -42,9 +42,9 @@ fun EditTodoDialog(
     Dialog(onDismissRequest = onDismiss) {
         Card(
             modifier = Modifier
-                .fillMaxWidth()
-                .fillMaxHeight(0.9f)
-                .padding(16.dp)
+                .fillMaxWidth(0.98f)
+                .fillMaxHeight(0.8f)
+                .padding(8.dp),
         ) {
             Column(
                 modifier = Modifier
