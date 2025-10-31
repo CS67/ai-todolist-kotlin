@@ -51,18 +51,12 @@ fun TodoItem(
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 4.dp)
             .animateContentSize(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         colors = CardDefaults.cardColors(
             containerColor = if (todo.isCompleted) 
                 MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
             else 
                 MaterialTheme.colorScheme.surface
-        ),
-        border = if (todo.isOverdue || todo.isDueSoon) 
-            androidx.compose.foundation.BorderStroke(2.dp, 
-                if (todo.isOverdue) MaterialTheme.colorScheme.error 
-                else MaterialTheme.colorScheme.tertiary
-            ) else null
+        )
     ) {
         Column(
             modifier = Modifier.fillMaxWidth()

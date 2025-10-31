@@ -42,8 +42,7 @@ fun AddTodoDialog(
             modifier = Modifier
                 .fillMaxWidth()
                 .fillMaxHeight(0.9f)
-                .padding(16.dp),
-            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+                .padding(16.dp)
         ) {
             Column(
                 modifier = Modifier
