@@ -1,6 +1,7 @@
 package com.example.todolist.ai
 
 import com.example.todolist.data.Priority
+import com.example.todolist.data.SubTask
 import com.example.todolist.data.Todo
 import com.google.gson.Gson
 import com.google.gson.JsonSyntaxException
@@ -61,6 +62,7 @@ class AITaskParser(private val apiKey: String) {
   "description": "任务描述（可选，补充详细信息）",
   "priority": "优先级（LOW/MEDIUM/HIGH/URGENT之一）",
   "dueDate": "截止时间（格式：YYYY-MM-DD HH:mm，如没有明确时间则为null）",
+  "subTasks": ["子任务1", "子任务2", "..."],
   "reasoning": "分析推理过程"
 }
 
@@ -78,7 +80,18 @@ class AITaskParser(private val apiKey: String) {
 - 如果只提到时间没提日期，默认为今天
 - 请使用YYYY-MM-DD HH:mm格式返回时间，例如：2025-11-03 17:38
 
-示例：
+子任务识别规则：
+- 如果用户提到具体的步骤、阶段或分工，识别为子任务
+- 常见表达：
+  - "包括A、B、C"
+  - "需要先做X，再做Y，最后做Z" 
+  - "分为几个步骤"
+  - "第一步...第二步..."
+  - "要完成A任务、B任务"
+  - "具体要做：1.xxx 2.xxx 3.xxx"
+- 如果没有明确的子任务，subTasks为空数组[]
+
+示例1：
 输入："今天晚上17:38去楼下超市买东西"
 输出：
 {
@@ -86,7 +99,20 @@ class AITaskParser(private val apiKey: String) {
   "description": "购买生活用品",
   "priority": "MEDIUM",
   "dueDate": "2025-11-03 17:38",
-  "reasoning": "这是一个日常购物任务，有明确的时间要求但不紧急，设为中等优先级"
+  "subTasks": [],
+  "reasoning": "这是一个日常购物任务，有明确的时间要求但不紧急，设为中等优先级，没有明确的子任务"
+}
+
+示例2：
+输入："明天完成项目报告，包括数据分析、写总结、制作PPT"
+输出：
+{
+  "title": "完成项目报告",
+  "description": "综合性项目报告制作",
+  "priority": "HIGH",
+  "dueDate": "2025-11-04 23:59",
+  "subTasks": ["数据分析", "写总结", "制作PPT"],
+  "reasoning": "项目报告是重要任务，有明确的截止时间，用户明确提到了三个具体步骤"
 }
 
 请只返回JSON，不要包含其他文字。
@@ -166,7 +192,8 @@ class AITaskParser(private val apiKey: String) {
                 description = parsed["description"] as? String ?: "",
                 priority = parsePriority(parsed["priority"] as? String),
                 dueDate = parseDueDate(parsed["dueDate"]),
-                reasoning = parsed["reasoning"] as? String ?: ""
+                reasoning = parsed["reasoning"] as? String ?: "",
+                subTasks = parseSubTasks(parsed["subTasks"])
             )
         } catch (e: Exception) {
             throw IllegalArgumentException("解析AI响应失败: ${e.message}", e)
@@ -181,6 +208,37 @@ class AITaskParser(private val apiKey: String) {
             Priority.valueOf(priorityStr?.uppercase() ?: "MEDIUM")
         } catch (e: IllegalArgumentException) {
             Priority.MEDIUM
+        }
+    }
+    
+    /**
+     * 解析子任务
+     */
+    private fun parseSubTasks(subTasksObj: Any?): List<SubTask> {
+        return try {
+            when (subTasksObj) {
+                is List<*> -> {
+                    subTasksObj.mapNotNull { item ->
+                        val title = item as? String
+                        if (title?.isNotBlank() == true) {
+                            SubTask(title = title.trim())
+                        } else null
+                    }
+                }
+                is String -> {
+                    // 如果是字符串，尝试按逗号分割
+                    val trimmed = subTasksObj.trim()
+                    if (trimmed.isEmpty() || trimmed.equals("[]")) {
+                        emptyList()
+                    } else {
+                        listOf(SubTask(title = trimmed))
+                    }
+                }
+                null -> emptyList()
+                else -> emptyList()
+            }
+        } catch (e: Exception) {
+            emptyList()
         }
     }
     
@@ -303,7 +361,8 @@ class AITaskParser(private val apiKey: String) {
             title = this.title,
             description = this.description,
             priority = this.priority,
-            dueDate = this.dueDate
+            dueDate = this.dueDate,
+            subTasks = this.subTasks
         )
     }
 }
@@ -316,5 +375,6 @@ data class ParsedTask(
     val description: String,
     val priority: Priority,
     val dueDate: Long?,
-    val reasoning: String
+    val reasoning: String,
+    val subTasks: List<SubTask> = emptyList()
 )

@@ -146,7 +146,8 @@ class TodoViewModel(private val repository: TodoRepository) : ViewModel() {
             title = parsedTask.title,
             description = parsedTask.description,
             priority = parsedTask.priority,
-            dueDate = parsedTask.dueDate
+            dueDate = parsedTask.dueDate,
+            subTasks = parsedTask.subTasks
         )
         hideAIAddDialog()
     }

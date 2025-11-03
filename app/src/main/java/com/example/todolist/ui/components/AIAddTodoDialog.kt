@@ -127,7 +127,12 @@ fun AIAddTodoDialog(
                             )
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
-                                text = "• 明天上午10点开会\n• 下周五交作业，很重要\n• 买牛奶面包，不急\n• 紧急：立即处理客户投诉",
+                                text = "🎯 示例：",
+                                style = MaterialTheme.typography.bodySmall,
+                                fontWeight = FontWeight.Medium
+                            )
+                            Text(
+                                text = "• 明天上午10点开会\n• 下周五交作业，很重要\n• 买牛奶面包，不急\n• 紧急：立即处理客户投诉\n• 明天完成项目报告，包括数据分析、写总结、制作PPT",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                             )
@@ -224,6 +229,25 @@ fun AIAddTodoDialog(
                                 if (task.dueDate != null) {
                                     val dateFormat = java.text.SimpleDateFormat("MM-dd HH:mm", java.util.Locale.getDefault())
                                     TaskInfoRow("截止时间", dateFormat.format(java.util.Date(task.dueDate)))
+                                }
+                                
+                                // 显示子任务
+                                if (task.subTasks.isNotEmpty()) {
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Text(
+                                        text = "📋 子任务：",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        fontWeight = FontWeight.Medium,
+                                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                                    )
+                                    task.subTasks.forEach { subTask ->
+                                        Text(
+                                            text = "  • ${subTask.title}",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
+                                            modifier = Modifier.padding(start = 8.dp, top = 2.dp)
+                                        )
+                                    }
                                 }
                                 
                                 if (task.reasoning.isNotBlank()) {
