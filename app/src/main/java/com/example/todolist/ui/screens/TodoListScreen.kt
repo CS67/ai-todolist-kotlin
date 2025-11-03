@@ -65,8 +65,9 @@ fun TodoListScreen(
                 title = {
                     Column {
                         Text(
-                            text = "待办清单",
+                            text = "智能多级任务管理系统",
                             style = MaterialTheme.typography.headlineSmall
+
                         )
                         if (totalCount > 0) {
                             Text(
