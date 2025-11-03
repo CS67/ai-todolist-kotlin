@@ -1,8 +1,8 @@
 <resources>
-    <string name="app_name">待办清单</string>
+    <string name="app_name">智能多级任务管理系统</string>
     
     <!-- 主界面 -->
-    <string name="todo_list_title">待办清单</string>
+    <string name="todo_list_title">智能多级任务管理系统</string>
     <string name="incomplete_tasks_count">还有 %d 个未完成任务</string>
     <string name="add_task">添加任务</string>
     <string name="clear_completed">清除已完成任务</string>
