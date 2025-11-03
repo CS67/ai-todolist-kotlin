@@ -30,8 +30,8 @@ class AITaskParser(private val apiKey: String) {
     /**
      * 解析自然语言输入为Todo对象
      */
-    suspend fun parseTask(input: String): Result<ParsedTask> = withContext(Dispatchers.IO) {
-        try {
+    suspend fun parseTask(input: String): Result<ParsedTask> {
+        return try {
             val prompt = createPrompt(input)
             val response = callDeepSeekAPI(prompt)
             val parsedTask = parseResponse(response)
@@ -45,129 +45,56 @@ class AITaskParser(private val apiKey: String) {
      * 创建给AI的提示词
      */
     private fun createPrompt(input: String): String {
-        val currentTime = System.currentTimeMillis()
-        val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
-        val currentTimeStr = dateFormat.format(Date(currentTime))
+        val currentTime = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).format(Date())
         
         return """
-你是一个任务解析助手，需要将用户的自然语言输入解析为结构化的任务数据。
+你是一个任务解析助手，将自然语言转换为结构化任务数据。
 
-当前时间：$currentTimeStr
-
+当前时间：$currentTime
 用户输入：$input
 
-请分析这段话并提取出以下信息，以JSON格式返回：
+返回JSON格式：
 {
-  "title": "任务标题（简洁明了，不超过20字）",
-  "description": "任务描述（可选，补充详细信息）",
-  "priority": "优先级（LOW/MEDIUM/HIGH/URGENT之一）",
-  "dueDate": "截止时间（格式：YYYY-MM-DD HH:mm，如没有明确时间则为null）",
-  "subTasks": ["子任务1", "子任务2", "..."],
-  "reasoning": "分析推理过程"
+  "title": "任务标题",
+  "description": "任务描述",
+  "priority": "LOW/MEDIUM/HIGH/URGENT",
+  "dueDate": "YYYY-MM-DD HH:mm格式或null",
+  "subTasks": ["子任务1", "子任务2"],
+  "reasoning": "分析过程"
 }
 
-优先级判断规则：
-- URGENT：紧急，立即需要处理的事情
-- HIGH：重要且有明确时间要求的事情
-- MEDIUM：一般重要性的日常任务
-- LOW：可以延后处理的事情
+优先级规则：URGENT(紧急)、HIGH(重要有时限)、MEDIUM(日常)、LOW(可延后)
+时间规则：今天=当前日期，明天=+1天，只有时间默认今天
+子任务规则：识别"包括A、B、C"、"先做X再做Y"等表达
 
-时间解析规则：
-- "今天"指当前日期
-- "明天"指当前日期+1天
-- "下周"指下周同一天
-- 具体时间如"17:38"需要结合日期
-- 如果只提到时间没提日期，默认为今天
-- 请使用YYYY-MM-DD HH:mm格式返回时间，例如：2025-11-03 17:38
-
-子任务识别规则：
-- 如果用户提到具体的步骤、阶段或分工，识别为子任务
-- 常见表达：
-  - "包括A、B、C"
-  - "需要先做X，再做Y，最后做Z" 
-  - "分为几个步骤"
-  - "第一步...第二步..."
-  - "要完成A任务、B任务"
-  - "具体要做：1.xxx 2.xxx 3.xxx"
-- 如果没有明确的子任务，subTasks为空数组[]
-
-示例1：
-输入："今天晚上17:38去楼下超市买东西"
-输出：
-{
-  "title": "去楼下超市买东西",
-  "description": "购买生活用品",
-  "priority": "MEDIUM",
-  "dueDate": "2025-11-03 17:38",
-  "subTasks": [],
-  "reasoning": "这是一个日常购物任务，有明确的时间要求但不紧急，设为中等优先级，没有明确的子任务"
-}
-
-示例2：
-输入："明天完成项目报告，包括数据分析、写总结、制作PPT"
-输出：
-{
-  "title": "完成项目报告",
-  "description": "综合性项目报告制作",
-  "priority": "HIGH",
-  "dueDate": "2025-11-04 23:59",
-  "subTasks": ["数据分析", "写总结", "制作PPT"],
-  "reasoning": "项目报告是重要任务，有明确的截止时间，用户明确提到了三个具体步骤"
-}
-
-请只返回JSON，不要包含其他文字。
+只返回JSON，无其他文字。
         """.trimIndent()
     }
     
     /**
      * 调用DeepSeek API
      */
-    private suspend fun callDeepSeekAPI(prompt: String): String {
+    private suspend fun callDeepSeekAPI(prompt: String): String = withContext(Dispatchers.IO) {
         val requestBody = mapOf(
             "model" to MODEL,
-            "messages" to listOf(
-                mapOf(
-                    "role" to "user",
-                    "content" to prompt
-                )
-            ),
+            "messages" to listOf(mapOf("role" to "user", "content" to prompt)),
             "temperature" to 0.1,
             "max_tokens" to 500
         )
-        
-        val json = gson.toJson(requestBody)
-        val body = json.toRequestBody("application/json".toMediaType())
         
         val request = Request.Builder()
             .url(API_URL)
             .addHeader("Authorization", "Bearer $apiKey")
             .addHeader("Content-Type", "application/json")
-            .post(body)
+            .post(gson.toJson(requestBody).toRequestBody("application/json".toMediaType()))
             .build()
         
-        return withContext(Dispatchers.IO) {
-            client.newCall(request).execute().use { response ->
-                if (!response.isSuccessful) {
-                    throw IOException("API调用失败: ${response.code} ${response.message}")
-                }
-                
-                val responseBody = response.body?.string() 
-                    ?: throw IOException("响应体为空")
-                
-                // 解析API响应
-                val apiResponse = gson.fromJson(responseBody, Map::class.java)
-                val choices = apiResponse["choices"] as? List<*>
-                    ?: throw IOException("API响应格式错误")
-                
-                val firstChoice = choices.firstOrNull() as? Map<*, *>
-                    ?: throw IOException("没有找到响应选择")
-                
-                val message = firstChoice["message"] as? Map<*, *>
-                    ?: throw IOException("没有找到消息内容")
-                
-                message["content"] as? String
-                    ?: throw IOException("没有找到文本内容")
-            }
+        client.newCall(request).execute().use { response ->
+            val body = response.body?.string() ?: throw IOException("响应体为空")
+            val apiResponse = gson.fromJson(body, Map::class.java)
+            val choices = apiResponse["choices"] as List<*>
+            val message = (choices[0] as Map<*, *>)["message"] as Map<*, *>
+            message["content"] as String
         }
     }
     
@@ -175,29 +102,19 @@ class AITaskParser(private val apiKey: String) {
      * 解析AI返回的响应
      */
     private fun parseResponse(response: String): ParsedTask {
-        try {
-            // 提取JSON部分（去除可能的markdown标记）
-            val jsonStart = response.indexOf("{")
-            val jsonEnd = response.lastIndexOf("}") + 1
-            
-            if (jsonStart == -1 || jsonEnd <= jsonStart) {
-                throw JsonSyntaxException("响应中没有找到有效的JSON")
-            }
-            
-            val jsonStr = response.substring(jsonStart, jsonEnd)
-            val parsed = gson.fromJson(jsonStr, Map::class.java)
-            
-            return ParsedTask(
-                title = parsed["title"] as? String ?: "新任务",
-                description = parsed["description"] as? String ?: "",
-                priority = parsePriority(parsed["priority"] as? String),
-                dueDate = parseDueDate(parsed["dueDate"]),
-                reasoning = parsed["reasoning"] as? String ?: "",
-                subTasks = parseSubTasks(parsed["subTasks"])
-            )
-        } catch (e: Exception) {
-            throw IllegalArgumentException("解析AI响应失败: ${e.message}", e)
-        }
+        val jsonStart = response.indexOf("{")
+        val jsonEnd = response.lastIndexOf("}") + 1
+        val jsonStr = response.substring(jsonStart, jsonEnd)
+        val parsed = gson.fromJson(jsonStr, Map::class.java)
+        
+        return ParsedTask(
+            title = parsed["title"] as? String ?: "新任务",
+            description = parsed["description"] as? String ?: "",
+            priority = parsePriority(parsed["priority"] as? String),
+            dueDate = parseDueDate(parsed["dueDate"]),
+            reasoning = parsed["reasoning"] as? String ?: "",
+            subTasks = parseSubTasks(parsed["subTasks"])
+        )
     }
     
     /**
@@ -206,7 +123,7 @@ class AITaskParser(private val apiKey: String) {
     private fun parsePriority(priorityStr: String?): Priority {
         return try {
             Priority.valueOf(priorityStr?.uppercase() ?: "MEDIUM")
-        } catch (e: IllegalArgumentException) {
+        } catch (e: Exception) {
             Priority.MEDIUM
         }
     }
@@ -215,30 +132,11 @@ class AITaskParser(private val apiKey: String) {
      * 解析子任务
      */
     private fun parseSubTasks(subTasksObj: Any?): List<SubTask> {
-        return try {
-            when (subTasksObj) {
-                is List<*> -> {
-                    subTasksObj.mapNotNull { item ->
-                        val title = item as? String
-                        if (title?.isNotBlank() == true) {
-                            SubTask(title = title.trim())
-                        } else null
-                    }
-                }
-                is String -> {
-                    // 如果是字符串，尝试按逗号分割
-                    val trimmed = subTasksObj.trim()
-                    if (trimmed.isEmpty() || trimmed.equals("[]")) {
-                        emptyList()
-                    } else {
-                        listOf(SubTask(title = trimmed))
-                    }
-                }
-                null -> emptyList()
-                else -> emptyList()
+        return when (subTasksObj) {
+            is List<*> -> subTasksObj.mapNotNull { item ->
+                (item as? String)?.takeIf { it.isNotBlank() }?.let { SubTask(title = it.trim()) }
             }
-        } catch (e: Exception) {
-            emptyList()
+            else -> emptyList()
         }
     }
     
@@ -246,113 +144,21 @@ class AITaskParser(private val apiKey: String) {
      * 解析截止时间
      */
     private fun parseDueDate(dueDateObj: Any?): Long? {
-        try {
-            when (dueDateObj) {
-                is String -> {
-                    val trimmed = dueDateObj.trim().removeSurrounding("\"")
-                    if (trimmed.isBlank() || trimmed.equals("null", ignoreCase = true)) {
-                        return null
-                    }
-                    
-                    // 优先尝试标准格式：YYYY-MM-DD HH:mm
-                    try {
-                        val standardFormat = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
-                        standardFormat.timeZone = TimeZone.getDefault()
-                        return standardFormat.parse(trimmed)?.time
-                    } catch (e: Exception) {
-                        // 如果标准格式解析失败，尝试其他格式
-                    }
-                    
-                    // 尝试其他常见格式
-                    parseDateString(trimmed)?.time?.let { return it }
-                    
-                    // 如果都失败了，尝试解析为数字时间戳（兼容旧格式）
-                    trimmed.toLongOrNull()?.let {
-                        var v = it
-                        if (v < 1_000_000_000_000L) v *= 1000L
-                        return v
-                    }
-                    
-                    return null
+        return when (dueDateObj) {
+            is String -> {
+                val trimmed = dueDateObj.trim().removeSurrounding("\"")
+                if (trimmed.isBlank() || trimmed.equals("null", true)) return null
+                try {
+                    SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).parse(trimmed)?.time
+                } catch (e: Exception) {
+                    null
                 }
-                is Number -> {
-                    // 兼容数字时间戳
-                    var v = dueDateObj.toLong()
-                    if (v < 1_000_000_000_000L) v *= 1000L
-                    return v
-                }
-                null -> return null
-                else -> return null
             }
-        } catch (e: Exception) {
-            return null
+            is Number -> dueDateObj.toLong().let { if (it < 1_000_000_000_000L) it * 1000L else it }
+            else -> null
         }
     }
 
-    /**
-     * 尝试解析多种常见日期字符串（备用格式，主要用于兼容）
-     */
-    private fun parseDateString(s: String): Date? {
-        val locale = Locale.getDefault()
-        val now = Calendar.getInstance()
-
-        // 备用格式列表（如果标准格式YYYY-MM-DD HH:mm失败时使用）
-        val patterns = listOf(
-            "yyyy-MM-dd'T'HH:mm:ss",
-            "yyyy-MM-dd'T'HH:mm:ssXXX", 
-            "yyyy-MM-dd'T'HH:mm:ss'Z'",
-            "MM-dd HH:mm",
-            "MM/dd HH:mm", 
-            "HH:mm",
-            "yyyy-MM-dd"
-        )
-
-        for (pat in patterns) {
-            try {
-                val fmt = SimpleDateFormat(pat, locale)
-                fmt.timeZone = TimeZone.getDefault()
-                val parsed = fmt.parse(s)
-                if (parsed != null) {
-                    // 如果模式不包含年份，补上当前年
-                    if (!pat.contains("yyyy")) {
-                        val cal = Calendar.getInstance()
-                        cal.time = parsed
-                        cal.set(Calendar.YEAR, now.get(Calendar.YEAR))
-                        return cal.time
-                    }
-                    return parsed
-                }
-            } catch (_: Exception) {
-                // 继续尝试下一个格式
-            }
-        }
-
-        // 最后尝试：正则提取 MM-dd HH:mm 格式
-        val regex = Regex("(\\d{1,2})[-/.](\\d{1,2})\\s+(\\d{1,2}):(\\d{2})")
-        regex.find(s)?.let { match ->
-            try {
-                val month = match.groupValues[1].toInt()
-                val day = match.groupValues[2].toInt()
-                val hour = match.groupValues[3].toInt()
-                val minute = match.groupValues[4].toInt()
-                
-                val cal = Calendar.getInstance()
-                cal.set(Calendar.YEAR, now.get(Calendar.YEAR))
-                cal.set(Calendar.MONTH, month - 1)
-                cal.set(Calendar.DAY_OF_MONTH, day)
-                cal.set(Calendar.HOUR_OF_DAY, hour)
-                cal.set(Calendar.MINUTE, minute)
-                cal.set(Calendar.SECOND, 0)
-                cal.set(Calendar.MILLISECOND, 0)
-                return cal.time
-            } catch (_: Exception) {
-                // 忽略错误
-            }
-        }
-
-        return null
-    }
-    
     /**
      * 转换为Todo对象
      */

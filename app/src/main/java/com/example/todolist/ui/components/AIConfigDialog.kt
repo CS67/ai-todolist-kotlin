@@ -79,16 +79,13 @@ fun AIConfigDialog(
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text(
-                            text = "🤖 关于AI智能解析",
+                            text = "🤖 AI智能解析",
                             style = MaterialTheme.typography.labelLarge,
                             fontWeight = FontWeight.Medium
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = "AI功能可以帮您将自然语言转换为结构化的任务，例如：\n\n" +
-                                    "「明天下午3点开会」→ 自动设置标题、时间和优先级\n" +
-                                    "「紧急：处理客户投诉」→ 自动识别为高优先级任务\n" +
-                                    "「下周买菜，不急」→ 自动设置为低优先级",
+                            text = "AI可以将自然语言转换为结构化任务\n例如：「明天下午3点开会」→ 自动设置时间和优先级",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                         )
@@ -120,27 +117,15 @@ fun AIConfigDialog(
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text(
-                            text = "🔑 如何获取DeepSeek API密钥：",
+                            text = "🔑 获取API密钥：",
                             style = MaterialTheme.typography.labelMedium,
                             fontWeight = FontWeight.Medium
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = "1. 访问 platform.deepseek.com\n" +
-                                    "2. 注册并登录账户\n" +
-                                    "3. 进入「API Keys」页面\n" +
-                                    "4. 点击「Create API Key」\n" +
-                                    "5. 复制生成的密钥到此处",
+                            text = "访问 platform.deepseek.com → 注册登录 → API Keys → Create API Key",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
-                        )
-                        
-                        Spacer(modifier = Modifier.height(8.dp))
-                        
-                        Text(
-                            text = "💰 费用说明：DeepSeek API价格相对便宜，新用户通常有免费额度",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.primary
                         )
                     }
                 }
@@ -151,19 +136,12 @@ fun AIConfigDialog(
                         containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
                     )
                 ) {
-                    Column(modifier = Modifier.padding(12.dp)) {
-                        Text(
-                            text = "🔒 隐私保护",
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.Medium
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = "API密钥仅存储在您的设备本地，不会上传到任何服务器",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-                        )
-                    }
+                    Text(
+                        text = "🔒 密钥仅存储在本地设备",
+                        modifier = Modifier.padding(12.dp),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                    )
                 }
                 
                 // 操作按钮

@@ -121,18 +121,7 @@ fun AIAddTodoDialog(
                     ) {
                         Column(modifier = Modifier.padding(12.dp)) {
                             Text(
-                                text = "💡 AI可以理解的表达：",
-                                style = MaterialTheme.typography.labelMedium,
-                                fontWeight = FontWeight.Medium
-                            )
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                text = "🎯 示例：",
-                                style = MaterialTheme.typography.bodySmall,
-                                fontWeight = FontWeight.Medium
-                            )
-                            Text(
-                                text = "• 明天上午10点开会\n• 下周五交作业，很重要\n• 买牛奶面包，不急\n• 紧急：立即处理客户投诉\n• 明天完成项目报告，包括数据分析、写总结、制作PPT",
+                                text = "💡 示例：明天上午10点开会 • 紧急：处理投诉 • 完成报告，包括数据分析、写总结、制作PPT",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                             )
