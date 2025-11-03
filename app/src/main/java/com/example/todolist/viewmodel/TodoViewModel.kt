@@ -3,6 +3,7 @@ package com.example.todolist.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.example.todolist.ai.ParsedTask
 import com.example.todolist.data.Priority
 import com.example.todolist.data.SubTask
 import com.example.todolist.data.Todo
@@ -26,6 +27,13 @@ class TodoViewModel(private val repository: TodoRepository) : ViewModel() {
     
     private val _showAddDialog = MutableStateFlow(false)
     val showAddDialog: StateFlow<Boolean> = _showAddDialog.asStateFlow()
+    
+    // AI相关状态
+    private val _showAIAddDialog = MutableStateFlow(false)
+    val showAIAddDialog: StateFlow<Boolean> = _showAIAddDialog.asStateFlow()
+    
+    private val _showAIConfigDialog = MutableStateFlow(false)
+    val showAIConfigDialog: StateFlow<Boolean> = _showAIConfigDialog.asStateFlow()
     
     // 折叠状态管理
     private val _isIncompleteCollapsed = MutableStateFlow(false)
@@ -100,6 +108,47 @@ class TodoViewModel(private val repository: TodoRepository) : ViewModel() {
      */
     fun hideAddDialog() {
         _showAddDialog.value = false
+    }
+    
+    /**
+     * 显示AI添加对话框
+     */
+    fun showAIAddDialog() {
+        _showAIAddDialog.value = true
+    }
+    
+    /**
+     * 隐藏AI添加对话框
+     */
+    fun hideAIAddDialog() {
+        _showAIAddDialog.value = false
+    }
+    
+    /**
+     * 显示AI配置对话框
+     */
+    fun showAIConfigDialog() {
+        _showAIConfigDialog.value = true
+    }
+    
+    /**
+     * 隐藏AI配置对话框
+     */
+    fun hideAIConfigDialog() {
+        _showAIConfigDialog.value = false
+    }
+    
+    /**
+     * 从AI解析结果添加Todo
+     */
+    fun addTodoFromAI(parsedTask: ParsedTask) {
+        addTodo(
+            title = parsedTask.title,
+            description = parsedTask.description,
+            priority = parsedTask.priority,
+            dueDate = parsedTask.dueDate
+        )
+        hideAIAddDialog()
     }
     
     /**

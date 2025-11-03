@@ -9,6 +9,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -17,7 +19,10 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.ViewModelProvider
 import com.example.todolist.data.Todo
+import com.example.todolist.preferences.rememberAIPreferences
 import com.example.todolist.ui.components.AddTodoDialog
+import com.example.todolist.ui.components.AIAddTodoDialog
+import com.example.todolist.ui.components.AIConfigDialog
 import com.example.todolist.ui.components.CollapsibleSectionHeader
 import com.example.todolist.ui.components.EditTodoDialog
 import com.example.todolist.ui.components.EmptyState
@@ -40,9 +45,15 @@ fun TodoListScreen(
     
     val todos by viewModel.todos.collectAsState()
     val showAddDialog by viewModel.showAddDialog.collectAsState()
+    val showAIAddDialog by viewModel.showAIAddDialog.collectAsState()
+    val showAIConfigDialog by viewModel.showAIConfigDialog.collectAsState()
     val editingTodo by viewModel.editingTodo.collectAsState()
     val isIncompleteCollapsed by viewModel.isIncompleteCollapsed.collectAsState()
     val isCompletedCollapsed by viewModel.isCompletedCollapsed.collectAsState()
+    
+    // AI偏好设置
+    val aiPreferences = rememberAIPreferences()
+    var apiKey by remember { mutableStateOf(aiPreferences.getApiKey()) }
     
     val completedCount = todos.count { it.isCompleted }
     val totalCount = todos.size
@@ -67,6 +78,21 @@ fun TodoListScreen(
                     }
                 },
                 actions = {
+                    // AI设置按钮
+                    IconButton(
+                        onClick = { viewModel.showAIConfigDialog() }
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Settings,
+                            contentDescription = "AI设置",
+                            tint = if (aiPreferences.isAIEnabled()) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                            }
+                        )
+                    }
+                    
                     if (completedCount > 0) {
                         IconButton(
                             onClick = { viewModel.clearCompletedTodos() }
@@ -81,14 +107,34 @@ fun TodoListScreen(
             )
         },
         floatingActionButton = {
-            FloatingActionButton(
-                onClick = { viewModel.showAddDialog() },
-                containerColor = MaterialTheme.colorScheme.primary
+            Column(
+                horizontalAlignment = Alignment.End,
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = "添加任务"
-                )
+                // AI智能添加按钮（如果已配置API）
+                if (aiPreferences.isAIEnabled()) {
+                    SmallFloatingActionButton(
+                        onClick = { viewModel.showAIAddDialog() },
+                        containerColor = MaterialTheme.colorScheme.secondary
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Star,
+                            contentDescription = "AI智能添加",
+                            tint = MaterialTheme.colorScheme.onSecondary
+                        )
+                    }
+                }
+                
+                // 常规添加按钮
+                FloatingActionButton(
+                    onClick = { viewModel.showAddDialog() },
+                    containerColor = MaterialTheme.colorScheme.primary
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = "添加任务"
+                    )
+                }
             }
         }
     ) { paddingValues ->
@@ -253,6 +299,29 @@ fun TodoListScreen(
             onDismiss = { viewModel.hideAddDialog() },
             onConfirm = { title, description, priority, dueDate, subTasks ->
                 viewModel.addTodo(title, description, priority, dueDate, subTasks)
+            }
+        )
+    }
+    
+    // AI智能添加对话框
+    if (showAIAddDialog) {
+        AIAddTodoDialog(
+            onDismiss = { viewModel.hideAIAddDialog() },
+            onConfirm = { parsedTask ->
+                viewModel.addTodoFromAI(parsedTask)
+            },
+            apiKey = apiKey
+        )
+    }
+    
+    // AI配置对话框
+    if (showAIConfigDialog) {
+        AIConfigDialog(
+            currentApiKey = apiKey,
+            onDismiss = { viewModel.hideAIConfigDialog() },
+            onSaveApiKey = { newApiKey ->
+                apiKey = newApiKey
+                aiPreferences.saveApiKey(newApiKey)
             }
         )
     }

@@ -61,6 +61,10 @@ dependencies {
     // JSON解析
     implementation("com.google.code.gson:gson:2.10.1")
     
+    // 网络请求
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
+    
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
