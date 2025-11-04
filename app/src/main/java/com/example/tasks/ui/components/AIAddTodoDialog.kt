@@ -116,15 +116,8 @@ fun AIAddTodoDialog(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = Icons.Default.Star,
-                            contentDescription = "AI助手",
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(24.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "AI智能添加",
+                            text = "智能分析Task",
                             style = MaterialTheme.typography.headlineSmall,
                             fontWeight = FontWeight.Bold
                         )
@@ -152,12 +145,7 @@ fun AIAddTodoDialog(
                         )
                     }
                 } else {
-                    // 用户输入区域
-                    Text(
-                        text = "描述你要添加的任务：",
-                        style = MaterialTheme.typography.labelLarge
-                    )
-                    
+
                     // 输入框和语音按钮
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -168,83 +156,41 @@ fun AIAddTodoDialog(
                             onValueChange = { userInput = it },
                             placeholder = { 
                                 Text(
-                                    text = "例如：今天晚上17:38去楼下超市买东西",
+                                    text = "💡 示例：紧急: 明天上午10点开会 / 完成报告，包括数据分析、写总结、制作PPT",
+                                    style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                                 )
                             },
                             modifier = Modifier.weight(1f),
-                            minLines = 3,
+                            minLines = 2,
                             maxLines = 5,
                             enabled = !isLoading && !isListening
                         )
-                        
-                        Spacer(modifier = Modifier.width(8.dp))
-                        
+                    }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.Bottom
+                    ) {
                         // 语音输入按钮
                         FloatingActionButton(
                             onClick = { startVoiceInput() },
-                            modifier = Modifier.size(48.dp),
-                            containerColor = if (isListening) 
-                                MaterialTheme.colorScheme.error 
-                            else 
+//                            modifier = Modifier.size(48.dp),
+                            modifier = Modifier.weight(1f),
+                            containerColor = if (isListening)
+                                MaterialTheme.colorScheme.error
+                            else
                                 MaterialTheme.colorScheme.primary,
                             elevation = FloatingActionButtonDefaults.elevation(0.dp)
                         ) {
                             Text(
-                                text = if (isListening) "⏹" else "🎤",
-                                style = MaterialTheme.typography.titleLarge,
+                                text = if (isListening) "⏹" else " 🎤 语音输入",
+                                style = MaterialTheme.typography.titleSmall,
                                 color = MaterialTheme.colorScheme.onPrimary
                             )
                         }
                     }
-                    
-                    // 示例提示
-                    Card(
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                        )
-                    ) {
-                        Column(modifier = Modifier.padding(12.dp)) {
-                            Text(
-                                text = "💡 示例：明天上午10点开会 • 紧急：处理投诉 • 完成报告，包括数据分析、写总结、制作PPT",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-                            )
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                text = "🎤 点击麦克风按钮进行中文语音输入",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
-                            )
-                        }
-                    }
-                    
-                    // 语音识别状态提示
-                    if (isListening) {
-                        Card(
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.primaryContainer
-                            )
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(12.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(16.dp),
-                                    strokeWidth = 2.dp,
-                                    color = MaterialTheme.colorScheme.primary
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(
-                                    text = "🎤 正在听取语音输入，请说话...",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer
-                                )
-                            }
-                        }
-                    }
-                    
+
                     // 解析按钮
                     Button(
                         onClick = {
@@ -317,13 +263,7 @@ fun AIAddTodoDialog(
                             )
                         ) {
                             Column(modifier = Modifier.padding(16.dp)) {
-                                Text(
-                                    text = "✨ AI解析结果",
-                                    style = MaterialTheme.typography.labelLarge,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer
-                                )
-                                
+
                                 Spacer(modifier = Modifier.height(12.dp))
                                 
                                 // 任务信息
@@ -341,7 +281,7 @@ fun AIAddTodoDialog(
                                 if (task.subTasks.isNotEmpty()) {
                                     Spacer(modifier = Modifier.height(8.dp))
                                     Text(
-                                        text = "📋 子任务：",
+                                        text = "📋子任务：",
                                         style = MaterialTheme.typography.bodyMedium,
                                         fontWeight = FontWeight.Medium,
                                         color = MaterialTheme.colorScheme.onPrimaryContainer
@@ -359,7 +299,7 @@ fun AIAddTodoDialog(
                                 if (task.reasoning.isNotBlank()) {
                                     Spacer(modifier = Modifier.height(8.dp))
                                     Text(
-                                        text = "💭 AI分析：${task.reasoning}",
+                                        text = "💭AI分析过程：${task.reasoning}",
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
                                     )

@@ -38,9 +38,9 @@ fun TodoListScreen(
     viewModel: TodoViewModel = viewModel(factory = viewModelFactory)
 ) {
     // 初始化示例数据
-    LaunchedEffect(Unit) {
-        viewModel.initializeSampleData()
-    }
+//    LaunchedEffect(Unit) {
+//        viewModel.initializeSampleData()
+//    }
     
     val todos by viewModel.todos.collectAsState()
     val showAddDialog by viewModel.showAddDialog.collectAsState()
