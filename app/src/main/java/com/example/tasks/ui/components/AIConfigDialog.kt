@@ -47,7 +47,7 @@ fun AIConfigDialog(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "API密钥设置",
+                        text = "DeepSeek API设置",
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold
                     )
