@@ -1,5 +1,11 @@
 package com.example.todolist.ui.components
 
+import android.Manifest
+import android.content.Intent
+import android.speech.RecognizerIntent
+import android.speech.SpeechRecognizer
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -17,6 +23,7 @@ import androidx.compose.ui.window.Dialog
 import com.example.todolist.ai.AITaskParser
 import com.example.todolist.ai.ParsedTask
 import kotlinx.coroutines.launch
+import java.util.*
 
 /**
  * AI智能添加任务对话框
@@ -32,9 +39,63 @@ fun AIAddTodoDialog(
     var isLoading by remember { mutableStateOf(false) }
     var parsedTask by remember { mutableStateOf<ParsedTask?>(null) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
+    var isListening by remember { mutableStateOf(false) }
     
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
+    
+    // 语音识别权限请求
+    val speechPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            // 权限获得后，启动语音识别
+            isListening = true
+        } else {
+            errorMessage = "需要麦克风权限才能使用语音输入"
+            isListening = false
+        }
+    }
+    
+    // 语音识别结果处理
+    val speechRecognitionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        isListening = false
+        if (result.resultCode == android.app.Activity.RESULT_OK) {
+            val matches = result.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
+            if (!matches.isNullOrEmpty()) {
+                userInput = matches[0]
+            }
+        } else {
+            errorMessage = "语音识别取消或失败"
+        }
+    }
+    
+    // 启动语音识别的函数
+    fun startVoiceInput() {
+        if (!SpeechRecognizer.isRecognitionAvailable(context)) {
+            errorMessage = "设备不支持语音识别"
+            return
+        }
+        
+        errorMessage = null
+        speechPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+    }
+    
+    // 当获得权限后，启动语音识别
+    LaunchedEffect(isListening) {
+        if (isListening) {
+            val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+                putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+                putExtra(RecognizerIntent.EXTRA_LANGUAGE, "zh-CN")
+                putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, "zh-CN")
+                putExtra(RecognizerIntent.EXTRA_PROMPT, "请说出您要添加的任务...")
+                putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1)
+            }
+            speechRecognitionLauncher.launch(intent)
+        }
+    }
     
     Dialog(onDismissRequest = onDismiss) {
         Card(
@@ -98,20 +159,45 @@ fun AIAddTodoDialog(
                         style = MaterialTheme.typography.labelLarge
                     )
                     
-                    OutlinedTextField(
-                        value = userInput,
-                        onValueChange = { userInput = it },
-                        placeholder = { 
-                            Text(
-                                text = "例如：今天晚上17:38去楼下超市买东西",
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                            )
-                        },
+                    // 输入框和语音按钮
+                    Row(
                         modifier = Modifier.fillMaxWidth(),
-                        minLines = 3,
-                        maxLines = 5,
-                        enabled = !isLoading
-                    )
+                        verticalAlignment = Alignment.Bottom
+                    ) {
+                        OutlinedTextField(
+                            value = userInput,
+                            onValueChange = { userInput = it },
+                            placeholder = { 
+                                Text(
+                                    text = "例如：今天晚上17:38去楼下超市买东西",
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                                )
+                            },
+                            modifier = Modifier.weight(1f),
+                            minLines = 3,
+                            maxLines = 5,
+                            enabled = !isLoading && !isListening
+                        )
+                        
+                        Spacer(modifier = Modifier.width(8.dp))
+                        
+                        // 语音输入按钮
+                        FloatingActionButton(
+                            onClick = { startVoiceInput() },
+                            modifier = Modifier.size(48.dp),
+                            containerColor = if (isListening) 
+                                MaterialTheme.colorScheme.error 
+                            else 
+                                MaterialTheme.colorScheme.primary,
+                            elevation = FloatingActionButtonDefaults.elevation(0.dp)
+                        ) {
+                            Text(
+                                text = if (isListening) "⏹" else "🎤",
+                                style = MaterialTheme.typography.titleLarge,
+                                color = MaterialTheme.colorScheme.onPrimary
+                            )
+                        }
+                    }
                     
                     // 示例提示
                     Card(
@@ -125,6 +211,38 @@ fun AIAddTodoDialog(
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                             )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "🎤 点击麦克风按钮进行中文语音输入",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
+                            )
+                        }
+                    }
+                    
+                    // 语音识别状态提示
+                    if (isListening) {
+                        Card(
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.primaryContainer
+                            )
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(16.dp),
+                                    strokeWidth = 2.dp,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = "🎤 正在听取语音输入，请说话...",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                                )
+                            }
                         }
                     }
                     

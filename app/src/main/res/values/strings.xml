@@ -35,4 +35,14 @@
     <string name="delete">删除</string>
     <string name="mark_completed">标记为已完成</string>
     <string name="mark_incomplete">标记为未完成</string>
+    
+    <!-- AI 和语音功能 -->
+    <string name="ai_add_task">AI智能添加</string>
+    <string name="voice_input">语音输入</string>
+    <string name="stop_recording">停止录音</string>
+    <string name="voice_input_hint">点击麦克风按钮进行中文语音输入</string>
+    <string name="listening">正在听取语音输入，请说话...</string>
+    <string name="microphone_permission_needed">需要麦克风权限才能使用语音输入</string>
+    <string name="speech_not_available">设备不支持语音识别</string>
+    <string name="speech_recognition_failed">语音识别取消或失败</string>
 </resources>
