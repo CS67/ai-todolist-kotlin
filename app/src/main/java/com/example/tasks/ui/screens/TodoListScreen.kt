@@ -64,7 +64,7 @@ fun TodoListScreen(
                 title = {
                     Column {
                         Text(
-                            text = "智能多级任务管理系统",
+                            text = "Tasks",
                             style = MaterialTheme.typography.headlineSmall
 
                         )
