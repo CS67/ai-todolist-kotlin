@@ -2,6 +2,7 @@ package com.example.tasks.ui.components
 
 import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -61,20 +62,30 @@ fun AIAddTodoDialog(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
         isListening = false
-        if (result.resultCode == android.app.Activity.RESULT_OK) {
-            val matches = result.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
-            if (!matches.isNullOrEmpty()) {
-                userInput = matches[0]
+        when (result.resultCode) {
+            android.app.Activity.RESULT_OK -> {
+                val matches = result.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
+                if (!matches.isNullOrEmpty()) {
+                    userInput = matches[0]
+                }
             }
-        } else {
-            errorMessage = "语音识别取消或失败"
+            android.app.Activity.RESULT_CANCELED -> {
+                errorMessage = "语音识别已取消"
+            }
+            else -> {
+                errorMessage = "语音识别失败，请检查麦克风权限和网络连接"
+            }
         }
     }
     
     // 启动语音识别的函数
     fun startVoiceInput() {
-        if (!SpeechRecognizer.isRecognitionAvailable(context)) {
-            errorMessage = "设备不支持语音识别"
+        // 检查语音识别的可用性
+        val packageManager = context.packageManager
+        val speechIntent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
+        
+        if (packageManager.queryIntentActivities(speechIntent, 0).isEmpty()) {
+            errorMessage = "设备未安装语音识别服务，请安装 Google 应用或其他语音识别应用"
             return
         }
         
@@ -89,10 +100,20 @@ fun AIAddTodoDialog(
                 putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
                 putExtra(RecognizerIntent.EXTRA_LANGUAGE, "zh-CN")
                 putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, "zh-CN")
+                putExtra(RecognizerIntent.EXTRA_ONLY_RETURN_LANGUAGE_PREFERENCE, false)
                 putExtra(RecognizerIntent.EXTRA_PROMPT, "请说出您要添加的任务...")
-                putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1)
+                putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 3)
+                putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
+                // 添加调用包名，提高兼容性
+                putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, context.packageName)
             }
-            speechRecognitionLauncher.launch(intent)
+            
+            try {
+                speechRecognitionLauncher.launch(intent)
+            } catch (e: Exception) {
+                isListening = false
+                errorMessage = "启动语音识别失败：${e.message}"
+            }
         }
     }
     
