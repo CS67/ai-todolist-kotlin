@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.todolist"
+    namespace = "com.example.tasks"
     compileSdk = 36
 
     defaultConfig {
