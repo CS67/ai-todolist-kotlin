@@ -1,6 +1,8 @@
 # TodoList 待办清单应用
 
-这是一个使用 Kotlin 和 Jetpack Compose 开发的现代化待办清单应用。
+这是一个完全用Ai开发的安卓项目。
+
+使用 Kotlin 和 Jetpack Compose 开发的支持语音功能的AI智能解析任务的待办清单应用。
 
 ## 功能特性
 
